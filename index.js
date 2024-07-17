@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 7000;
@@ -25,7 +26,37 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try {
-   
+    const usersCollection = client.db('MoneyFlow').collection('Users');
+
+app.post('/users' ,async(req,res)=>{
+const user=req.body;
+const query = { email: user.email ,phone :user.phone}
+const existingUser = await usersCollection.findOne(query);
+if (existingUser) {
+  return res.send({ message: 'User Already Exist', insertId: null });
+}
+const result = await usersCollection.insertOne(user);
+res.send(result);
+})
+
+// app.get('/users/:email',async (req,res)=>{
+//   const email=req.params.email;
+//   const query={email:email};
+//   const result= await usersCollection.findOne(query);
+//   res.send(result)
+// })
+app.get('/users/:phone',async (req,res)=>{
+  const phone=req.params.phone;
+  console.log(phone)
+  const query = {
+    $or: [
+      { phone: phone },
+      { email: phone }
+    ]
+  };
+  const result= await usersCollection.findOne(query);
+  res.send(result)
+})
 
 
 
@@ -38,10 +69,6 @@ async function run() {
 
 
 
-
-
-
-    
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
